@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMax slice">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f7fff8"/>
+      <stop offset="0.42" stop-color="#e7f6ea"/>
+      <stop offset="1" stop-color="#c6e7c4"/>
+    </linearGradient>
+    <linearGradient id="ground" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#d9f5cf"/>
+      <stop offset="0.35" stop-color="#7dce78"/>
+      <stop offset="1" stop-color="#1f7a3a"/>
+    </linearGradient>
+    <linearGradient id="leaf" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#b7e39a"/>
+      <stop offset="0.45" stop-color="#2f8a45"/>
+      <stop offset="1" stop-color="#14532d"/>
+    </linearGradient>
+    <linearGradient id="leafdark" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3e9a55"/>
+      <stop offset="1" stop-color="#0f3d22"/>
+    </linearGradient>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#0c3a1c" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="800" fill="url(#sky)"/>
+  <ellipse cx="600" cy="430" rx="760" ry="90" fill="#ffffff" opacity="0.55"/>
+  <path d="M0 470 C200 420 400 500 600 450 C820 396 1000 470 1200 420 L1200 800 L0 800 Z" fill="url(#ground)"/>
+  <g opacity="0.55" fill="#eaffea">
+    <ellipse cx="180" cy="520" rx="90" ry="16"/>
+    <ellipse cx="460" cy="500" rx="120" ry="18"/>
+    <ellipse cx="820" cy="515" rx="140" ry="18"/>
+    <ellipse cx="1080" cy="530" rx="90" ry="14"/>
+  </g>
+  <g fill="#146b34">
+    <g>
+      <path d="M40 760 l8 -70 8 70z"/>
+      <path d="M70 770 l6 -54 7 54z"/>
+      <path d="M100 755 l9 -80 8 80z"/>
+      <animateTransform attributeName="transform" type="skewX" values="-2;2;-2" dur="4.5s" repeatCount="indefinite"/>
+    </g>
+  </g>
+  <g id="rows" stroke="#0e5a2c" stroke-width="2" fill="#1f8a40">
+    <g opacity="0.9">
+      <path d="M80 690 q6 -28 0 -36 q-6 8 0 36z"/>
+      <path d="M110 700 q7 -34 0 -42 q-7 8 0 42z"/>
+      <path d="M140 684 q5 -24 0 -30 q-5 6 0 30z"/>
+      <path d="M170 708 q8 -40 0 -48 q-8 8 0 48z"/>
+      <path d="M200 692 q6 -30 0 -36 q-6 6 0 36z"/>
+      <path d="M240 712 q7 -36 0 -44 q-7 8 0 44z"/>
+      <path d="M280 688 q5 -26 0 -32 q-5 6 0 32z"/>
+      <path d="M320 706 q8 -42 0 -50 q-8 8 0 50z"/>
+      <path d="M360 694 q6 -28 0 -36 q-6 8 0 36z"/>
+      <path d="M400 716 q7 -38 0 -46 q-7 8 0 46z"/>
+      <path d="M450 700 q6 -32 0 -40 q-6 8 0 40z"/>
+      <path d="M500 720 q8 -44 0 -52 q-8 8 0 52z"/>
+      <path d="M560 698 q6 -30 0 -38 q-6 8 0 38z"/>
+      <path d="M620 724 q8 -46 0 -54 q-8 8 0 54z"/>
+      <path d="M690 702 q6 -28 0 -36 q-6 6 0 36z"/>
+      <path d="M760 718 q8 -40 0 -48 q-8 8 0 48z"/>
+      <path d="M830 696 q6 -30 0 -38 q-6 8 0 38z"/>
+      <path d="M900 722 q8 -44 0 -52 q-8 8 0 52z"/>
+      <path d="M970 704 q6 -32 0 -40 q-6 8 0 40z"/>
+      <path d="M1040 716 q7 -36 0 -44 q-7 8 0 44z"/>
+      <path d="M1110 700 q6 -28 0 -36 q-6 8 0 36z"/>
+      <animateTransform attributeName="transform" type="skewX" values="1.5;-1.5;1.5" dur="5.5s" repeatCount="indefinite"/>
+    </g>
+  </g>
+  <g filter="url(#soft)">
+    <g>
+      <ellipse cx="250" cy="640" rx="70" ry="14" fill="#0c3a1c" opacity="0.25"/>
+      <path d="M250 640 V470" stroke="#5a3a1a" stroke-width="6" fill="none"/>
+      <path d="M250 560 C180 530 160 470 210 450 C230 520 250 540 250 560Z" fill="url(#leafdark)"/>
+      <path d="M250 520 C330 480 360 420 300 400 C280 470 260 500 250 520Z" fill="url(#leaf)"/>
+      <path d="M250 480 C170 450 150 390 200 370 C220 430 245 460 250 480Z" fill="url(#leaf)"/>
+      <path d="M248 450 C300 400 340 360 300 330 C270 390 250 420 248 450Z" fill="url(#leafdark)"/>
+      <path d="M250 430 C210 360 230 300 260 290 C250 360 250 400 250 430Z" fill="#8fd18a"/>
+      <animateTransform attributeName="transform" type="rotate" values="-1.2 250 640;1.2 250 640;-1.2 250 640" dur="7s" repeatCount="indefinite"/>
+    </g>
+    <g>
+      <ellipse cx="600" cy="610" rx="90" ry="16" fill="#0c3a1c" opacity="0.28"/>
+      <path d="M600 610 V400" stroke="#5a3a1a" stroke-width="8" fill="none"/>
+      <path d="M600 540 C500 500 470 420 540 390 C560 480 590 520 600 540Z" fill="url(#leaf)"/>
+      <path d="M600 500 C710 450 760 380 680 350 C650 440 620 480 600 500Z" fill="url(#leafdark)"/>
+      <path d="M600 460 C510 410 490 340 560 310 C570 390 595 430 600 460Z" fill="url(#leaf)"/>
+      <path d="M598 430 C690 360 740 310 680 280 C640 350 605 400 598 430Z" fill="url(#leafdark)"/>
+      <path d="M600 400 C560 320 590 250 630 240 C610 330 600 370 600 400Z" fill="#b7e7a4"/>
+      <animateTransform attributeName="transform" type="rotate" values="1 600 610;-1.4 600 610;1 600 610" dur="8s" repeatCount="indefinite"/>
+    </g>
+    <g>
+      <ellipse cx="960" cy="650" rx="76" ry="14" fill="#0c3a1c" opacity="0.25"/>
+      <path d="M960 650 V500" stroke="#5a3a1a" stroke-width="6" fill="none"/>
+      <path d="M960 590 C890 560 860 510 910 490 C930 550 955 575 960 590Z" fill="url(#leafdark)"/>
+      <path d="M960 560 C1040 520 1080 470 1020 450 C1000 520 970 545 960 560Z" fill="url(#leaf)"/>
+      <path d="M958 530 C900 480 890 430 940 410 C950 470 960 500 958 530Z" fill="url(#leaf)"/>
+      <path d="M960 510 C1010 450 1040 410 1000 390 C980 450 962 480 960 510Z" fill="#9ed98a"/>
+      <animateTransform attributeName="transform" type="rotate" values="-1 960 650;1.3 960 650;-1 960 650" dur="6.5s" repeatCount="indefinite"/>
+    </g>
+  </g>
+</svg>
