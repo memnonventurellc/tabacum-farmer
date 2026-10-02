@@ -1753,7 +1753,6 @@ function bindTerms(form){
 
 bindTerms($("#signup-form"));
 bindTerms($("#leaser-form"));
-const LOCK_TOPIC = "https://ntfy.sh/tabacum-locked-9c4e7a21b8d04f6e";
 const LOCK_PUB = {"key_ops": ["encrypt"], "ext": true, "kty": "RSA", "n": "vwQ28Qoelmtf2lqEYa0D3tUQO7vEP8F4SkXXwpgZi7X1j2_B0b0-J64OZg4UIM4paZmI8UZ3U0I7xXNE8VpF60Uhu07lte1ulhmWXXrgoDFs_aE4EskFZXN_GXPemAJSWGFBMyf0M_MaXa8kWCG0GF5dlYezz_xSkRZQG1mWEowDEfucxr55VRgdNhEIvjxwxrPR8oeiktpsB31rV8x6P7nBpaIMq4e6up0HOUxKbcuF3YHM6SflzQX4d5FvAxiCiQEpb3xhPVTUPlzcrjPhBZ0Z4Wb2TgdS4hAyUh1Ipu89CB32Phu4Dsk9NVVDfuqc5pX6JyLqiv7EZ515ONjLYQ", "e": "AQAB", "alg": "RSA-OAEP-256"};
 function bytesToB64(bytes){
   let bin = "";
@@ -1782,14 +1781,12 @@ async function lockSignup(obj){
 }
 async function sendLockedSignup(row, file){
   const picture = file ? await shrinkPicture(file) : "";
-  const packed = await lockSignup({ id: row.id, name: row.name, phone: row.phone, area: row.area, land: row.land, crop: row.crop, produces: row.produces, consent: row.consent, picture });
-  const gid = Math.random().toString(36).slice(2) + Date.now().toString(36);
-  const size = 2800;
-  const n = Math.ceil(packed.length / size);
-  for (let i = 0; i < n; i++) {
-    const res = await fetch(LOCK_TOPIC, { method: "POST", body: JSON.stringify({ gid, i, n, c: packed.slice(i * size, (i + 1) * size) }) });
-    if (!res.ok) throw new Error("send failed");
-  }
+  const res = await fetch("https://publisher-earlier-discrete-happiness.trycloudflare.com/signup", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Desk-Key": "sOmtkRSDUwuw-_c04-RORm304zTNU6KU" },
+    body: JSON.stringify({ id: row.id, name: row.name, phone: row.phone, area: row.area, land: row.land, crop: row.crop, produces: row.produces, consent: row.consent, picture })
+  });
+  if (!res.ok) throw new Error("send failed");
 }
 $("#signup-form").onsubmit = async (e) => {
   e.preventDefault();
@@ -2957,7 +2954,6 @@ $("#category-pin-enter").onsubmit = async (e) => {
 
 const ADMIN = { user: "K Memnon 2026", salt: "2e8361f60ff8a4df", hash: "d0277cf32882161f966c6db9914e126612944a81662e4bf7365d6c4d806d7783" };
 const FARMER = { user: "Farmer", salt: "8e18926d5a6136b1", hash: "475cd0462f216e5cef0b0a78da7d1818ad5bbf1d35902e6938248aa57d0dce92" };
-const SIGNUP_INBOX = "https://ntfy.sh/tabacum-farmer-a9ab6ca9343e910b639e3352";
 function farmerSession(){ return sessionStorage.getItem("tb-app-auth") === "farmer"; }
 function openGate(kind){
   sessionStorage.setItem("tb-app-auth", kind);
