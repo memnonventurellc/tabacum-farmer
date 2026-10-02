@@ -1782,15 +1782,63 @@ async function lockSignup(obj){
   const wrapped = new Uint8Array(await crypto.subtle.encrypt({ name: "RSA-OAEP" }, pub, rawAes));
   return JSON.stringify({ v: 1, iv: bytesToB64(iv), key: bytesToB64(wrapped), data: bytesToB64(ct) });
 }
-async function sendLockedSignup(row, file){
-  const picture = file ? await shrinkPicture(file) : "";
-  const res = await fetch("https://publisher-earlier-discrete-happiness.trycloudflare.com/signup", {
+const SIGNUP_URL = "https://publisher-earlier-discrete-happiness.trycloudflare.com/signup";
+const SIGNUP_OUTBOX = "tb-signup-outbox";
+function readSignupOutbox(){
+  try {
+    const rows = JSON.parse(localStorage.getItem(SIGNUP_OUTBOX) || "[]");
+    return Array.isArray(rows) ? rows : [];
+  } catch (e) { return []; }
+}
+function writeSignupOutbox(rows){
+  localStorage.setItem(SIGNUP_OUTBOX, JSON.stringify(rows));
+}
+function signupPayload(row, picture){
+  return { id: row.id, name: row.name, phone: row.phone, area: row.area, land: row.land, crop: row.crop, produces: row.produces, consent: row.consent, picture: picture || "", type: row.type || "farmer" };
+}
+async function postSignupPayload(payload){
+  const res = await fetch(SIGNUP_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json", "X-Desk-Key": "sOmtkRSDUwuw-_c04-RORm304zTNU6KU" },
-    body: JSON.stringify({ id: row.id, name: row.name, phone: row.phone, area: row.area, land: row.land, crop: row.crop, produces: row.produces, consent: row.consent, picture, type: row.type || "farmer" })
+    body: JSON.stringify(payload)
   });
   if (!res.ok) throw new Error("send failed");
 }
+let signupChain = Promise.resolve();
+function signupTurn(fn){
+  const run = signupChain.then(fn, fn);
+  signupChain = run.then(() => {}, () => {});
+  return run;
+}
+async function sendLockedSignup(row, file){
+  const picture = file ? await shrinkPicture(file) : "";
+  const payload = signupPayload(row, picture);
+  await signupTurn(async () => {
+    try { await postSignupPayload(payload); }
+    catch (err) {
+      const queued = readSignupOutbox();
+      queued.push(payload);
+      writeSignupOutbox(queued);
+    }
+  });
+}
+async function flushSignupQueue(){
+  await signupTurn(async () => {
+    const queued = readSignupOutbox();
+    if (!queued.length) return;
+    const left = [];
+    let blocked = false;
+    for (let i = 0; i < queued.length; i++) {
+      if (blocked) { left.push(queued[i]); continue; }
+      try { await postSignupPayload(queued[i]); }
+      catch (err) { blocked = true; left.push(queued[i]); }
+    }
+    writeSignupOutbox(left);
+  });
+}
+setInterval(flushSignupQueue, 15000);
+window.addEventListener("online", flushSignupQueue);
+flushSignupQueue();
 $("#signup-form").onsubmit = async (e) => {
   e.preventDefault();
   const consent = termsOk(e.target);
