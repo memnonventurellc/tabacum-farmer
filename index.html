@@ -1582,8 +1582,10 @@ function show(id){
   window.scrollTo(0, 0);
 }
 let role = localStorage.getItem("tb-role") || "farmer";
+function leaserSession(){ return sessionStorage.getItem("tb-app-auth") === "leaser"; }
 function roleOk(need){
   if (farmerSession()) return need === "farmer";
+  if (leaserSession()) return need === "leaser";
   if (role === "kyle") return need === "kyle";
   return need === "both" || need === role;
 }
@@ -3049,19 +3051,21 @@ $("#category-pin-enter").onsubmit = async (e) => {
 
 const ADMIN = { user: "K Memnon 2026", salt: "2e8361f60ff8a4df", hash: "d0277cf32882161f966c6db9914e126612944a81662e4bf7365d6c4d806d7783" };
 const FARMER = { user: "Farmer", salt: "8e18926d5a6136b1", hash: "475cd0462f216e5cef0b0a78da7d1818ad5bbf1d35902e6938248aa57d0dce92" };
+const LEASER = { user: "Leaser", salt: "54993cd090aed6b2", hash: "93077a103d242d4f00f8c792b9cbf3de4c0f4385d204a06fcf23f3925c97350f" };
 function farmerSession(){ return sessionStorage.getItem("tb-app-auth") === "farmer"; }
 function openGate(kind){
   sessionStorage.setItem("tb-app-auth", kind);
   document.body.classList.remove("locked");
-  document.body.classList.toggle("tester", kind === "farmer");
-  if (kind === "farmer") {
-    role = "farmer";
-    localStorage.setItem("tb-role", "farmer");
+  document.body.classList.toggle("tester", kind === "farmer" || kind === "leaser");
+  if (kind === "farmer" || kind === "leaser") {
+    role = kind;
+    localStorage.setItem("tb-role", kind);
     applyRole();
   }
 }
 if (sessionStorage.getItem("tb-app-auth") === "yes" || sessionStorage.getItem("tb-app-auth") === "admin") document.body.classList.remove("locked");
 if (farmerSession()) openGate("farmer");
+if (leaserSession()) openGate("leaser");
 $("#gate-form").onsubmit = async (e) => {
   e.preventDefault();
   const d = Object.fromEntries(new FormData(e.target));
@@ -3070,6 +3074,7 @@ $("#gate-form").onsubmit = async (e) => {
   const pass = String(d.pass || "");
   const adminHash = await pinHash(pass, ADMIN.salt);
   const farmerHash = await pinHash(pass, FARMER.salt);
+  const leaserHash = await pinHash(pass, LEASER.salt);
   if (name === ADMIN.user && adminHash === ADMIN.hash) {
     bad.classList.add("hide");
     openGate("admin");
@@ -3078,6 +3083,11 @@ $("#gate-form").onsubmit = async (e) => {
   if (name === FARMER.user && farmerHash === FARMER.hash) {
     bad.classList.add("hide");
     openGate("farmer");
+    return;
+  }
+  if (name === LEASER.user && leaserHash === LEASER.hash) {
+    bad.classList.add("hide");
+    openGate("leaser");
     return;
   }
   bad.classList.remove("hide");
