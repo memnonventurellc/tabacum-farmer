@@ -324,6 +324,7 @@ body.tester #roles, body.tester button[data-p="admin"] { display: none; }
   </section>
   <section id="overview" class="hide">
     <div id="overview-farmer">
+    <div id="desk-notes"></div>
     <div class="grid">
       <div class="card"><div class="label">Strain</div><div class="num">Not set</div><p class="note">Not set until a DNA strain is typed on the private side. A grade send then fills it from that list. No calls yet.</p></div>
     </div>
@@ -1454,7 +1455,28 @@ function paintWeek(){
   banner.textContent = missed ? "Missed weekly picture." : "Weekly picture is due.";
 }
 
+const DESK_REPLIES = "https://ntfy.sh/tabacum-desk-reply-7f3a9c2e1b64d08a/json?poll=1&since=all";
+async function pullDeskNotes(){
+  const box = $("#desk-notes");
+  if (!box) return;
+  try {
+    const res = await fetch(DESK_REPLIES);
+    const text = await res.text();
+    const ids = new Set(store.load("tb-farmers").filter((p) => p && p.id).map((p) => p.id));
+    const notes = [];
+    text.split("\n").forEach((line) => {
+      if (!line.trim()) return;
+      let ev; try { ev = JSON.parse(line); } catch (e) { return; }
+      if (!ev || ev.event !== "message" || !ev.message) return;
+      let row; try { row = JSON.parse(ev.message); } catch (e) { return; }
+      if (!row || !row.note || !ids.has(row.id)) return;
+      notes.push(row);
+    });
+    box.innerHTML = notes.slice().reverse().map((n) => "<p class='note'>From the desk" + (n.name ? " · " + esc(n.name) : "") + " · " + esc(n.note) + "</p>").join("");
+  } catch (e) {}
+}
 function paint(){
+  pullDeskNotes();
   ensureReportAnchors();
   paintAdminContent();
   paintCoalition();
@@ -1731,6 +1753,44 @@ function bindTerms(form){
 
 bindTerms($("#signup-form"));
 bindTerms($("#leaser-form"));
+const LOCK_TOPIC = "https://ntfy.sh/tabacum-locked-9c4e7a21b8d04f6e";
+const LOCK_PUB = {"key_ops": ["encrypt"], "ext": true, "kty": "RSA", "n": "vwQ28Qoelmtf2lqEYa0D3tUQO7vEP8F4SkXXwpgZi7X1j2_B0b0-J64OZg4UIM4paZmI8UZ3U0I7xXNE8VpF60Uhu07lte1ulhmWXXrgoDFs_aE4EskFZXN_GXPemAJSWGFBMyf0M_MaXa8kWCG0GF5dlYezz_xSkRZQG1mWEowDEfucxr55VRgdNhEIvjxwxrPR8oeiktpsB31rV8x6P7nBpaIMq4e6up0HOUxKbcuF3YHM6SflzQX4d5FvAxiCiQEpb3xhPVTUPlzcrjPhBZ0Z4Wb2TgdS4hAyUh1Ipu89CB32Phu4Dsk9NVVDfuqc5pX6JyLqiv7EZ515ONjLYQ", "e": "AQAB", "alg": "RSA-OAEP-256"};
+function bytesToB64(bytes){
+  let bin = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+  return btoa(bin);
+}
+async function shrinkPicture(file){
+  const bmp = await createImageBitmap(file);
+  const max = 720;
+  const scale = Math.min(1, max / Math.max(bmp.width, bmp.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(bmp.width * scale));
+  canvas.height = Math.max(1, Math.round(bmp.height * scale));
+  canvas.getContext("2d").drawImage(bmp, 0, 0, canvas.width, canvas.height);
+  const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.62));
+  return "data:image/jpeg;base64," + bytesToB64(new Uint8Array(await blob.arrayBuffer()));
+}
+async function lockSignup(obj){
+  const pub = await crypto.subtle.importKey("jwk", LOCK_PUB, { name: "RSA-OAEP", hash: "SHA-256" }, false, ["encrypt"]);
+  const aes = await crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, true, ["encrypt"]);
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv }, aes, new TextEncoder().encode(JSON.stringify(obj))));
+  const rawAes = new Uint8Array(await crypto.subtle.exportKey("raw", aes));
+  const wrapped = new Uint8Array(await crypto.subtle.encrypt({ name: "RSA-OAEP" }, pub, rawAes));
+  return JSON.stringify({ v: 1, iv: bytesToB64(iv), key: bytesToB64(wrapped), data: bytesToB64(ct) });
+}
+async function sendLockedSignup(row, file){
+  const picture = file ? await shrinkPicture(file) : "";
+  const packed = await lockSignup({ id: row.id, name: row.name, phone: row.phone, area: row.area, land: row.land, crop: row.crop, produces: row.produces, consent: row.consent, picture });
+  const gid = Math.random().toString(36).slice(2) + Date.now().toString(36);
+  const size = 2800;
+  const n = Math.ceil(packed.length / size);
+  for (let i = 0; i < n; i++) {
+    const res = await fetch(LOCK_TOPIC, { method: "POST", body: JSON.stringify({ gid, i, n, c: packed.slice(i * size, (i + 1) * size) }) });
+    if (!res.ok) throw new Error("send failed");
+  }
+}
 $("#signup-form").onsubmit = async (e) => {
   e.preventDefault();
   const consent = termsOk(e.target);
@@ -1757,9 +1817,7 @@ $("#signup-form").onsubmit = async (e) => {
   const row = { id, name: d.name, phone: d.phone, area: d.area, land: d.land, crop: d.crop, produces: d.produces || "Tobacco already", picture: place, consent };
   if (prior >= 0) all[prior] = row; else all.push(row);
   store.save("tb-farmers", all);
-  try {
-    await fetch(SIGNUP_INBOX, { method: "POST", body: JSON.stringify({ id, name: row.name, phone: row.phone, area: row.area, land: row.land, crop: row.crop, produces: row.produces, consent }) });
-  } catch (err) {}
+  try { await sendLockedSignup(row, file); } catch (err) {}
   if (file) notifyKyle(id, d.name, "sign-up picture", file.name);
   e.target.reset();
   paintFarmerType();
