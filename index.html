@@ -361,6 +361,9 @@ body.tester #roles, body.tester button[data-p="admin"] { display: none; }
         <label>What your land produces
           <select name="produces" id="produces"><option>Tobacco already</option><option>Other crops</option></select>
         </label>
+        <label>Sign-up type
+          <select name="signupType"><option value="farmer">Farmer</option><option value="sleep">Sleep</option></select>
+        </label>
         <div id="other-crops" class="hide">
           <p>If you want to lease to produce tobacco, give us this many acres.</p>
           <p class="num">Not set</p>
@@ -1784,7 +1787,7 @@ async function sendLockedSignup(row, file){
   const res = await fetch("https://publisher-earlier-discrete-happiness.trycloudflare.com/signup", {
     method: "POST",
     headers: { "Content-Type": "application/json", "X-Desk-Key": "sOmtkRSDUwuw-_c04-RORm304zTNU6KU" },
-    body: JSON.stringify({ id: row.id, name: row.name, phone: row.phone, area: row.area, land: row.land, crop: row.crop, produces: row.produces, consent: row.consent, picture })
+    body: JSON.stringify({ id: row.id, name: row.name, phone: row.phone, area: row.area, land: row.land, crop: row.crop, produces: row.produces, consent: row.consent, picture, type: row.type || "farmer" })
   });
   if (!res.ok) throw new Error("send failed");
 }
@@ -1811,7 +1814,7 @@ $("#signup-form").onsubmit = async (e) => {
     $("#picture-need").classList.add("hide");
     await putFile(place, file, { client: id, name: file.name });
   }
-  const row = { id, name: d.name, phone: d.phone, area: d.area, land: d.land, crop: d.crop, produces: d.produces || "Tobacco already", picture: place, consent };
+  const row = { id, name: d.name, phone: d.phone, area: d.area, land: d.land, crop: d.crop, produces: d.produces || "Tobacco already", picture: place, consent, type: d.signupType === "sleep" ? "sleep" : "farmer" };
   if (prior >= 0) all[prior] = row; else all.push(row);
   store.save("tb-farmers", all);
   try { await sendLockedSignup(row, file); } catch (err) {}
