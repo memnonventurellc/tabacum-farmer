@@ -349,6 +349,7 @@ body.tester #roles, body.tester button[data-p="admin"] { display: none; }
           <label>Name<input name="name" required></label>
           <label>Phone<input name="phone" required></label>
         </div>
+        <label>Occupation<input name="occupation" placeholder="Not given"></label>
         <label>Area
           <select name="area"><option>Nord</option><option>Artibonite</option><option>Sud</option><option>Other</option></select>
         </label>
@@ -1837,7 +1838,7 @@ function writeSignupOutbox(rows){
   localStorage.setItem(SIGNUP_OUTBOX, JSON.stringify(rows));
 }
 function signupPayload(row, picture){
-  return { id: row.id, name: row.name, phone: row.phone, area: row.area, land: row.land, crop: row.crop, produces: row.produces, consent: row.consent, picture: picture || "", type: row.type || "farmer" };
+  return { id: row.id, name: row.name, phone: row.phone, area: row.area, land: row.land, crop: row.crop, produces: row.produces, occupation: row.occupation || "", consent: row.consent, picture: picture || "", type: row.type || "farmer" };
 }
 async function postSignupPayload(payload){
   const res = await fetch(SIGNUP_URL, {
@@ -1905,7 +1906,7 @@ $("#signup-form").onsubmit = async (e) => {
     $("#picture-need").classList.add("hide");
     await putFile(place, file, { client: id, name: file.name });
   }
-  const row = { id, name: d.name, phone: d.phone, area: d.area, land: d.land, crop: d.crop, produces: d.produces || "Tobacco already", picture: place, consent, type: d.signupType === "sleep" ? "sleep" : "farmer" };
+  const row = { id, name: d.name, phone: d.phone, occupation: String(d.occupation || "").trim(), area: d.area, land: d.land, crop: d.crop, produces: d.produces || "Tobacco already", picture: place, consent, type: d.signupType === "sleep" ? "sleep" : "farmer" };
   if (prior >= 0) all[prior] = row; else all.push(row);
   store.save("tb-farmers", all);
   try { await sendLockedSignup(row, file); } catch (err) {}
