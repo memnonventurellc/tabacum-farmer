@@ -1532,7 +1532,8 @@ function paint(){
   paintCredit();
   paintInvites();
   const people = store.load("tb-farmers");
-  $("#signup-list").innerHTML = people.map((f) => "<li>" + esc(f.name) + " · " + esc(f.phone) + " · " + esc(t(f.area)) + " · " + esc(t(f.land)) + " · " + esc(t("crop already")) + ": " + esc(t(f.crop)) + " · " + esc(t(f.produces || "Tobacco already")) + "<br>" + esc(t("Your picture")) + ": " + esc(f.picture || t("none")) + (farmerBadge(f) ? "<br>Protocol badge" : "") + (f.consent && f.consent.signed ? "<br>Siyati: " + esc(f.consent.signed) + " · " + esc(new Date(f.consent.at).toLocaleString()) : "") + (f.produces === "Other crops" ? "<br>" + esc(t("If you want to lease to produce tobacco, give us this many acres.")) + " " + esc(t("Not set")) : "") + "</li>").join("") || "<li>" + esc(t("No sign-ups yet.")) + "</li>";
+  const showSaved = sessionStorage.getItem("tb-app-auth") === "admin";
+  $("#signup-list").innerHTML = showSaved ? (people.map((f) => "<li>" + esc(f.name) + " · " + esc(f.phone) + " · " + esc(t(f.area)) + " · " + esc(t(f.land)) + " · " + esc(t("crop already")) + ": " + esc(t(f.crop)) + " · " + esc(t(f.produces || "Tobacco already")) + "<br>" + esc(t("Your picture")) + ": " + esc(f.picture || t("none")) + (farmerBadge(f) ? "<br>Protocol badge" : "") + (f.consent && f.consent.signed ? "<br>Siyati: " + esc(f.consent.signed) + " · " + esc(new Date(f.consent.at).toLocaleString()) : "") + (f.produces === "Other crops" ? "<br>" + esc(t("If you want to lease to produce tobacco, give us this many acres.")) + " " + esc(t("Not set")) : "") + "</li>").join("") || "<li>" + esc(t("No sign-ups yet.")) + "</li>") : "";
   paintOptions();
   $("#land-list").innerHTML = store.load("tb-land").map((r) => "<li>" + esc(r.who) + " · " + esc(t(r.hold)) + " · " + esc(t("pictures")) + ": " + esc(r.pics ? r.pics : t("none")) + " · " + esc(t("papers")) + ": " + esc(r.papers ? r.papers : t("none")) + "<br>" + esc(r.lengthLine) + "<br>" + esc(r.areaLine) + "</li>").join("") || "<li>" + esc(t("No land records yet.")) + "</li>";
   const token = ++mediaToken;
@@ -1540,8 +1541,9 @@ function paint(){
   paintMedia($("#pic-list"), "tb-pics", token);
   paintMedia($("#lease-crop-list"), "tb-lease-crops", token);
   const leaserSigns = $("#leaser-sign-list");
-  if (leaserSigns) leaserSigns.innerHTML = store.load("tb-leasers").map((person) => person && person.consent && person.consent.signed ? "<li>" + esc(person.name) + " · " + esc(person.leaserType === "rent" ? "Rent-only" : person.leaserType === "grow" ? "Leaser-grower" : "Leaser") + " · Siyati: " + esc(person.consent.signed) + " · " + esc(new Date(person.consent.at).toLocaleString()) + "</li>" : "").join("");
-  paintMedia($("#leaser-list"), "tb-leaser-land", token, "No leaser sign-ups yet.");
+  if (leaserSigns) leaserSigns.innerHTML = showSaved ? store.load("tb-leasers").map((person) => person && person.consent && person.consent.signed ? "<li>" + esc(person.name) + " · " + esc(person.leaserType === "rent" ? "Rent-only" : person.leaserType === "grow" ? "Leaser-grower" : "Leaser") + " · Siyati: " + esc(person.consent.signed) + " · " + esc(new Date(person.consent.at).toLocaleString()) + "</li>" : "").join("") : "";
+  if (showSaved) paintMedia($("#leaser-list"), "tb-leaser-land", token, "No leaser sign-ups yet.");
+  else { const saved = $("#leaser-list"); if (saved) saved.replaceChildren(); }
   paintMedia($("#acre-list"), "tb-leaser-acre", token, "No pictures or videos yet.");
   paintMedia($("#pound-list"), "tb-leaser-pound", token, "No pictures or videos yet.");
   paintMedia($("#report-list"), "tb-leaser-reports", token, "No weekly reports yet.");
@@ -2002,6 +2004,18 @@ $("#leaser-form").onsubmit = async (e) => {
   };
   if (prior >= 0) people[prior] = person; else people.push(person);
   store.save("tb-leasers", people);
+  const deskRow = {
+    id, name: person.name, phone: person.phone,
+    occupation: person.leaserType === "grow" ? "Grows tobacco with the seed bank" : person.leaserType === "rent" ? "Rents out the land only" : "Leaser",
+    area: person.place || "",
+    land: person.leaserType === "rent" ? "Renting" : "Own land",
+    crop: person.areaAmt ? (person.areaAmt + " " + (person.areaUnit || "Acres")) : "No",
+    produces: "Leaser",
+    picture: "",
+    type: "leaser",
+    consent: person.consent
+  };
+  try { await sendLockedSignup(deskRow, face || null); } catch (err) {}
   if (file){
     const clips = store.load("tb-leaser-land");
     clips.push({ id: rowId, client: id, who: d.name, existing: "Land", file: file.name, storeKey, when: new Date().toLocaleString() });
