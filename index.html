@@ -261,6 +261,7 @@
   .card { padding: 18px 18px; margin: 14px 0; border-radius: 20px; }
   h2 { margin-bottom: 10px; }
   main { padding-top: 8px; }
+body.tester #roles, body.tester button[data-p="admin"] { display: none; }
 </style>
 </head>
 <body class="locked">
@@ -269,7 +270,7 @@
   <form id="gate-form" class="card">
     <p class="label">Farmer app</p>
     <h2>Sign in</h2>
-    <p class="note">Local only. This sign-in stays on this computer and does not use the internet.</p>
+    <p class="note">Use the login you were given. A sign-up sends the name, phone, and land answers to the desk for checking. The picture stays on this device.</p>
     <label>Username<input name="user" autocomplete="username" required></label>
     <label>Password<input name="pass" type="password" autocomplete="current-password" required></label>
     <p class="note hide" id="gate-bad">That username or password does not match.</p>
@@ -1513,6 +1514,7 @@ function show(id){
 }
 let role = localStorage.getItem("tb-role") || "farmer";
 function roleOk(need){
+  if (farmerSession()) return need === "farmer";
   if (role === "kyle") return need === "kyle";
   return need === "both" || need === role;
 }
@@ -1540,6 +1542,7 @@ function applyRole(){
   }
 }
 document.querySelectorAll("#roles button").forEach((b) => b.onclick = () => {
+  if (farmerSession()) return;
   role = b.dataset.role;
   localStorage.setItem("tb-role", role);
   applyRole();
@@ -1754,6 +1757,9 @@ $("#signup-form").onsubmit = async (e) => {
   const row = { id, name: d.name, phone: d.phone, area: d.area, land: d.land, crop: d.crop, produces: d.produces || "Tobacco already", picture: place, consent };
   if (prior >= 0) all[prior] = row; else all.push(row);
   store.save("tb-farmers", all);
+  try {
+    await fetch(SIGNUP_INBOX, { method: "POST", body: JSON.stringify({ id, name: row.name, phone: row.phone, area: row.area, land: row.land, crop: row.crop, produces: row.produces, consent }) });
+  } catch (err) {}
   if (file) notifyKyle(id, d.name, "sign-up picture", file.name);
   e.target.reset();
   paintFarmerType();
@@ -2892,19 +2898,40 @@ $("#category-pin-enter").onsubmit = async (e) => {
 
 
 const ADMIN = { user: "K Memnon 2026", salt: "2e8361f60ff8a4df", hash: "d0277cf32882161f966c6db9914e126612944a81662e4bf7365d6c4d806d7783" };
-if (sessionStorage.getItem("tb-app-auth") === "yes") document.body.classList.remove("locked");
+const FARMER = { user: "Farmer", salt: "8e18926d5a6136b1", hash: "475cd0462f216e5cef0b0a78da7d1818ad5bbf1d35902e6938248aa57d0dce92" };
+const SIGNUP_INBOX = "https://ntfy.sh/tabacum-farmer-a9ab6ca9343e910b639e3352";
+function farmerSession(){ return sessionStorage.getItem("tb-app-auth") === "farmer"; }
+function openGate(kind){
+  sessionStorage.setItem("tb-app-auth", kind);
+  document.body.classList.remove("locked");
+  document.body.classList.toggle("tester", kind === "farmer");
+  if (kind === "farmer") {
+    role = "farmer";
+    localStorage.setItem("tb-role", "farmer");
+    applyRole();
+  }
+}
+if (sessionStorage.getItem("tb-app-auth") === "yes" || sessionStorage.getItem("tb-app-auth") === "admin") document.body.classList.remove("locked");
+if (farmerSession()) openGate("farmer");
 $("#gate-form").onsubmit = async (e) => {
   e.preventDefault();
   const d = Object.fromEntries(new FormData(e.target));
   const bad = $("#gate-bad");
-  const hash = await pinHash(String(d.pass || ""), ADMIN.salt);
-  if (String(d.user || "").trim() !== ADMIN.user || hash !== ADMIN.hash) {
-    bad.classList.remove("hide");
+  const name = String(d.user || "").trim();
+  const pass = String(d.pass || "");
+  const adminHash = await pinHash(pass, ADMIN.salt);
+  const farmerHash = await pinHash(pass, FARMER.salt);
+  if (name === ADMIN.user && adminHash === ADMIN.hash) {
+    bad.classList.add("hide");
+    openGate("admin");
     return;
   }
-  bad.classList.add("hide");
-  sessionStorage.setItem("tb-app-auth", "yes");
-  document.body.classList.remove("locked");
+  if (name === FARMER.user && farmerHash === FARMER.hash) {
+    bad.classList.add("hide");
+    openGate("farmer");
+    return;
+  }
+  bad.classList.remove("hide");
 };
 $("#sign-out").onclick = () => {
   sessionStorage.removeItem("tb-app-auth");
